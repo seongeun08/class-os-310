@@ -114,7 +114,7 @@ export default function Home() {
 
   // 관리자 인증 로그인
   const handleAdminAuth = () => {
-    if (password === "310") { 
+    if (password === "528491") { 
       setIsAdmin(true); 
       localStorage.setItem("class_admin", "true"); // [수정] 브라우저에 저장하여 다른 페이지와 연동
       alert("Admin Mode Active."); 
