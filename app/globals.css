@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --aero-blue: #00a2ed;
+  --aero-green: #39b54a;
+  --text-dark: #003366;
+}
+
+body {
+  /* 그 시절 상징이었던 친환경 녹색 대지와 파란 하늘의 추상적 그라데이션 */
+  background: 
+    radial-gradient(circle at 80% 20%, #b5f1cc 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, #9be5ff 0%, transparent 60%),
+    linear-gradient(160deg, #3a9ad9 0%, #eefcff 100%);
+  color: var(--text-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+}
+
+/* 윈도우 에어로 스타일의 고광택 투명 창 */
+.aero-window {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 100%);
+  backdrop-filter: blur(20px) saturate(200%);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+  border-right-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 20px 40px rgba(0, 50, 100, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-radius: 24px;
+}
+
+/* 2010년대 스마트폰 앱/윈도우 버튼 특유의 반사광 유리 버튼 */
+.aero-giant-btn {
+  position: relative;
+  background: linear-gradient(to bottom, #4fc3f7 0%, #0288d1 50%, #01579b 50.1%, #0091ea 100%);
+  border: 3px solid #ffffff;
+  border-radius: 24px;
+  color: white;
+  font-weight: 900;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  box-shadow: 
+    0 12px 24px rgba(1, 87, 155, 0.3),
+    inset 0 2px 4px rgba(255,255,255,0.6);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+/* 버튼 상단 유광 레이어 효과 */
+.aero-giant-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+  pointer-events: none;
+}
+
+.aero-giant-btn:hover {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+  box-shadow: 
+    0 18px 30px rgba(1, 87, 155, 0.4),
+    inset 0 2px 4px rgba(255,255,255,0.8);
+}
+
+.aero-giant-btn:active {
+  transform: scale(0.98);
+  filter: brightness(0.9);
+}
+
+/* 초록색 전용 입체 버튼 (포인트용) */
+.aero-giant-btn.green-btn {
+  background: linear-gradient(to bottom, #81c784 0%, #388e3c 50%, #1b5e20 50.1%, #2e7d32 100%);
+  box-shadow: 0 12px 24px rgba(27, 94, 32, 0.3), inset 0 2px 4px rgba(255,255,255,0.6);
+}
+
+/* 물방울/비눗방울 (입체적 액체 렌더링) */
+.aero-water-bubble {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  /* 실제 물방울처럼 외곽선과 굴절광 표현 */
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 162, 237, 0.4) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    inset 0 4px 12px rgba(255, 255, 255, 0.8),
+    inset -4px -4px 12px rgba(57, 181, 74, 0.3), /* 연두색 굴절광 */
+    0 12px 20px rgba(0, 50, 100, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.9);
+  user-select: none;
+}
