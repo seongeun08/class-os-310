@@ -2,18 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
-
-// 1️⃣ Supabase 창고와 연결하는 열쇠 장착!
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface Comment {
   id: number;
   author: string;
   text: string;
-  img?: string | null;
+  img?: string;
 }
 
 interface Post {
@@ -21,7 +15,7 @@ interface Post {
   author: string;
   title: string;
   content: string;
-  img?: string | null;
+  img?: string;
   comments: Comment[];
 }
 
@@ -32,31 +26,22 @@ export default function BoardPage() {
   const [content, setContent] = useState("");
   const [postImg, setPostImg] = useState("");
   
+  // 관리자 상태 추가
   const [isAdmin, setIsAdmin] = useState(false);
   
+  // 댓글 입력용 상태맵 (PostID별)
   const [commentAuth, setCommentAuth] = useState<{[key: number]: string}>({});
   const [commentText, setCommentText] = useState<{[key: number]: string}>({});
   const [commentImg, setCommentImg] = useState<{[key: number]: string}>({});
 
   const [currentTime, setCurrentTime] = useState("");
 
-  // 2️⃣ Supabase에서 작성된 글 목록 불러오기
-  const fetchPosts = async () => {
-    const { data, error } = await supabase
-      .from("posts")
-      .select("*")
-      .order("id", { ascending: false }); // 최신 글이 위로 오도록 정렬
-
-    if (error) {
-      console.error("데이터를 불러오지 못했습니다:", error);
-    } else {
-      setPosts(data || []);
-    }
-  };
-
   useEffect(() => {
-    fetchPosts(); // 페이지가 열리면 즉시 데이터 가져오기
+    // 게시글 로드
+    const saved = localStorage.getItem("class_posts");
+    if (saved) setPosts(JSON.parse(saved));
 
+    // 메인 홈에서 로그인했는지 관리자 상태 확인
     const adminStatus = localStorage.getItem("class_admin") === "true";
     setIsAdmin(adminStatus);
 
@@ -72,80 +57,56 @@ export default function BoardPage() {
     reader.readAsDataURL(file);
   };
 
-  // 3️⃣ 새 글 작성해서 Supabase로 전송하기
-  const handleCreatePost = async () => {
+  const handleCreatePost = () => {
     if (!author.trim() || !title.trim() || !content.trim()) return alert("모든 칸을 채워주세요.");
-    
-    const newPost = {
-      id: Date.now(), // 고유 번호
+    const newPost: Post = {
+      id: Date.now(),
       author: author.trim(),
       title,
       content,
-      img: postImg || null,
+      img: postImg || undefined,
       comments: []
     };
-
-    // Supabase의 'posts' 표에 새 데이터 넣기
-    const { error } = await supabase.from("posts").insert([newPost]);
-
-    if (error) {
-      alert("글 업로드 중 오류가 발생했습니다 😭");
-      console.error(error);
-    } else {
-      setPosts([newPost, ...posts]); // 화면에도 즉시 반영
-      setAuthor(""); setTitle(""); setContent(""); setPostImg(""); // 입력창 초기화
-    }
+    const updated = [newPost, ...posts];
+    setPosts(updated);
+    localStorage.setItem("class_posts", JSON.stringify(updated));
+    setAuthor(""); setTitle(""); setContent(""); setPostImg("");
   };
 
-  // 4️⃣ 관리자 권한으로 글 삭제하기 (Supabase에서도 삭제)
-  const handleDeletePost = async (postId: number) => {
+  // 관리자 전용 글 삭제 함수
+  const handleDeletePost = (postId: number) => {
     if (!confirm("정말 이 게시글을 삭제하시겠습니까?")) return;
     
-    const { error } = await supabase.from("posts").delete().eq("id", postId);
-
-    if (error) {
-      alert("글 삭제 중 오류가 발생했습니다 😭");
-      console.error(error);
-    } else {
-      setPosts(posts.filter(p => p.id !== postId)); // 화면에서도 즉시 지우기
-    }
+    const updated = posts.filter(p => p.id !== postId);
+    setPosts(updated);
+    localStorage.setItem("class_posts", JSON.stringify(updated));
   };
 
-  // 5️⃣ 댓글 작성해서 Supabase 업데이트하기
-  const handleAddComment = async (postId: number) => {
+  const handleAddComment = (postId: number) => {
     const cAuth = commentAuth[postId]?.trim() || "익명";
     const cText = commentText[postId]?.trim();
     if (!cText) return alert("댓글 내용을 작성하세요.");
 
-    const targetPost = posts.find(p => p.id === postId);
-    if (!targetPost) return;
+    const updated = posts.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          comments: [...p.comments, {
+            id: Date.now(),
+            author: cAuth,
+            text: cText,
+            img: commentImg[postId] || undefined
+          }]
+        };
+      }
+      return p;
+    });
 
-    const newComment = {
-      id: Date.now(),
-      author: cAuth,
-      text: cText,
-      img: commentImg[postId] || null
-    };
-
-    // 기존 댓글 배열에 새 댓글 추가
-    const updatedComments = [...(targetPost.comments || []), newComment];
-
-    // Supabase의 해당 글(postId) 댓글 항목만 쏙 업데이트
-    const { error } = await supabase
-      .from("posts")
-      .update({ comments: updatedComments })
-      .eq("id", postId);
-
-    if (error) {
-      alert("댓글 작성 중 오류가 발생했습니다 😭");
-      console.error(error);
-    } else {
-      // 화면 업데이트 및 입력창 초기화
-      setPosts(posts.map(p => p.id === postId ? { ...p, comments: updatedComments } : p));
-      setCommentAuth(prev => ({ ...prev, [postId]: "" }));
-      setCommentText(prev => ({ ...prev, [postId]: "" }));
-      setCommentImg(prev => ({ ...prev, [postId]: "" }));
-    }
+    setPosts(updated);
+    localStorage.setItem("class_posts", JSON.stringify(updated));
+    setCommentAuth(prev => ({ ...prev, [postId]: "" }));
+    setCommentText(prev => ({ ...prev, [postId]: "" }));
+    setCommentImg(prev => ({ ...prev, [postId]: "" }));
   };
 
   return (
@@ -203,6 +164,7 @@ export default function BoardPage() {
             <div className="flex justify-between border-b border-white/60 pb-2 items-center">
               <div className="flex items-center gap-3">
                 <span className="font-black text-base text-sky-900">{post.title}</span>
+                {/* 관리자일 때만 삭제 버튼 노출 */}
                 {isAdmin && (
                   <button 
                     onClick={() => handleDeletePost(post.id)}
@@ -221,7 +183,7 @@ export default function BoardPage() {
             {/* 댓글 리스트 */}
             <div className="bg-white/30 p-3 rounded-2xl space-y-2 border border-white/40">
               <h4 className="text-xs font-extrabold text-[#003366]/70 mb-2">Replies</h4>
-              {(post.comments || []).map(c => (
+              {post.comments.map(c => (
                 <div key={c.id} className="text-xs border-b border-gray-200/40 pb-2 last:border-none">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-bold text-sky-700">{c.author}</span>
@@ -255,6 +217,7 @@ export default function BoardPage() {
                   <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImgConvert(e.target.files[0], (base64) => setCommentImg({...commentImg, [post.id]: base64}))} />
                 </div>
               </div>
+
             </div>
           </div>
         ))}

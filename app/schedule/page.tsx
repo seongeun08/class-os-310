@@ -207,6 +207,3 @@ export default function SchedulePage() {
     </main>
   );
 }
-
-NEXT_PUBLIC_SUPABASE_URL=https://gnxnjrjawopmspiutnpf.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4-c8DIJwAdgXmMjepNIKtg_f9JwHLj2

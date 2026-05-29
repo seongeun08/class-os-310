@@ -2,12 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
-
-// 1️⃣ Supabase 연결 열쇠 장착 (자유게시판과 동일!)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface EvalNotice {
   id: number;
@@ -22,26 +16,13 @@ export default function EvalPage() {
   const [image, setImage] = useState("");
   const [currentTime, setCurrentTime] = useState("");
 
-  // 2️⃣ Supabase에서 수행평가 목록 불러오기
-  const fetchEvals = async () => {
-    const { data, error } = await supabase
-      .from("evals")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (error) {
-      console.error("데이터를 불러오지 못했습니다:", error);
-    } else {
-      setNotices(data || []);
-    }
-  };
-
   useEffect(() => {
+    // [수정] 메인 홈 화면과 동일한 키("class_admin")를 바라보도록 연동했습니다.
     const adminStatus = localStorage.getItem("class_admin") === "true";
     setIsAdmin(adminStatus);
 
-    // localStorage 대신 Supabase에서 가져오는 함수 실행
-    fetchEvals();
+    const saved = localStorage.getItem("class_evals");
+    if (saved) setNotices(JSON.parse(saved));
 
     const timer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }));
@@ -60,42 +41,23 @@ export default function EvalPage() {
     }
   };
 
-  // 3️⃣ Supabase로 수행평가 데이터 전송하기
-  const handleAddNotice = async () => {
+  const handleAddNotice = () => {
     if (!title.trim() || !image) return alert("제목과 이미지를 모두 등록해 주세요.");
-    
-    const newNotice = { 
-      id: Date.now(), 
-      title, 
-      img: image 
-    };
-    
-    // Supabase의 'evals' 표에 새 데이터 넣기
-    const { error } = await supabase.from("evals").insert([newNotice]);
-
-    if (error) {
-      alert("업로드 중 오류가 발생했습니다 😭");
-      console.error(error);
-    } else {
-      setNotices([newNotice, ...notices]); // 화면 즉시 반영
-      setTitle("");
-      setImage("");
-    }
+    const newNotice = { id: Date.now(), title, img: image };
+    const updated = [newNotice, ...notices];
+    setNotices(updated);
+    localStorage.setItem("class_evals", JSON.stringify(updated));
+    setTitle("");
+    setImage("");
   };
 
-  // 4️⃣ Supabase에서 수행평가 삭제하기
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
+    // [추가] 안전하게 한 번 더 물어보는 얼럿창을 추가했습니다.
     if (!confirm("정말 이 수행평가 공지를 삭제하시겠습니까?")) return;
     
-    // DB에서 해당 id를 가진 줄 삭제
-    const { error } = await supabase.from("evals").delete().eq("id", id);
-    
-    if (error) {
-      alert("삭제 중 오류가 발생했습니다 😭");
-      console.error(error);
-    } else {
-      setNotices(notices.filter(n => n.id !== id)); // 화면에서도 지우기
-    }
+    const updated = notices.filter(n => n.id !== id);
+    setNotices(updated);
+    localStorage.setItem("class_evals", JSON.stringify(updated));
   };
 
   return (
@@ -103,12 +65,14 @@ export default function EvalPage() {
       <header className="flex justify-between items-center aero-window p-6">
         <div>
           <h1 className="text-3xl font-black text-[#003366] tracking-tight">수행평가</h1>
+          {/* [수정] 관리자 상태에 따라 상단 서브 타이틀이 변경되도록 연동 */}
           <p className="text-xs font-bold text-sky-800/80 mt-0.5">
             {isAdmin ? "Admin Mode" : "View Mode"}
           </p>
         </div>
       </header>
 
+      {/* 관리자 사진 업로드 제어 패널 */}
       {isAdmin && (
         <section className="aero-window p-5 space-y-3 bg-white/40">
           <h3 className="text-sm font-black text-[#003366]">수행평가 파일 업로드</h3>
@@ -134,6 +98,7 @@ export default function EvalPage() {
         </section>
       )}
 
+      {/* 에어로 컴퓨터 시스템 배열 뷰어 */}
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {notices.map(notice => (
           <div key={notice.id} className="aero-window p-3 flex flex-col justify-between bg-white/20 hover:scale-[1.02] transition duration-200">
